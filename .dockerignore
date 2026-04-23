@@ -1,0 +1,16 @@
+node_modules
+data
+backups
+.env
+.env.local
+.env.*.local
+config/config.toml
+.git
+.gitignore
+.idea
+.vscode
+*.log
+*.tsbuildinfo
+.cache
+README.md
+LICENSE

@@ -1,0 +1,33 @@
+# Cairn configuration
+# Copy this file to config/config.toml and adjust.
+
+[digest]
+# Cron expression for the daily morning email.
+schedule = "0 6 * * *"
+
+# Send the email even when there are no imminent items.
+send_when_empty = true
+
+# Subject line for the daily digest.
+subject_prefix = "Cairn —"
+
+[backup]
+# Cron expression for sqlite backup.
+schedule = "0 2 * * *"
+
+# How many backup copies to keep on the destination.
+retention_count = 14
+
+[ui]
+# Product name shown in the UI and email footer.
+name = "Cairn"
+tagline = "Stones on the trail."
+
+# === AI providers (reserved; not used in MVP) ===
+# [ai.providers.anthropic]
+# models = ["claude-sonnet-4-6", "claude-opus-4-7"]
+# api_key_env = "ANTHROPIC_API_KEY"
+#
+# [ai.providers.ollama]
+# base_url = "http://localhost:11434"
+# models = ["llama3.1:70b"]

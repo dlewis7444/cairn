@@ -1,0 +1,25 @@
+{
+  "name": "cairn",
+  "version": "0.1.0",
+  "description": "A personal watchlist and morning digest.",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts"
+  },
+  "dependencies": {
+    "croner": "^10.0.1",
+    "hono": "^4.12.14",
+    "nodemailer": "^8.0.5",
+    "smol-toml": "^1.6.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/nodemailer": "^8.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

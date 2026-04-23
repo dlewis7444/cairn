@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cairn</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <img src="/static/logo.svg" alt="" class="brand-logo">
+      <h1 class="brand-name">Cairn</h1>
+    </div>
+    <div class="header-meta">
+      <span id="today-date" class="today-date"></span>
+      <button id="send-digest-btn" class="btn btn-ghost" title="Send the morning digest now">Send digest now</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="section section-expanded">
+      <h2 class="section-title">Morning Coffee</h2>
+      <div id="routine-list" class="routine-list"></div>
+    </section>
+
+    <section class="section section-expanded">
+      <h2 class="section-title">The Cairn</h2>
+      <div id="cairn-list" class="item-list"></div>
+      <button id="add-item-btn" class="btn btn-add">+ Add item</button>
+    </section>
+
+    <section class="section section-collapsed">
+      <h2 class="section-title section-toggle">
+        <span class="section-toggle-icon">▶</span> Maybe I Might
+      </h2>
+      <div id="mim-list" class="item-list"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <button id="archive-btn" class="footer-link">view archive →</button>
+    <span class="footer-tagline">Stones on the trail.</span>
+  </footer>
+
+  <dialog id="archive-dialog" class="dialog">
+    <header class="dialog-header">
+      <h2>Archive</h2>
+      <button class="dialog-close" data-close-dialog>×</button>
+    </header>
+    <div id="archive-list" class="item-list dialog-body"></div>
+  </dialog>
+
+  <dialog id="item-dialog" class="dialog">
+    <header class="dialog-header">
+      <h2 id="item-dialog-title">Add item</h2>
+      <button class="dialog-close" data-close-dialog>×</button>
+    </header>
+    <form id="item-form" class="item-form dialog-body">
+      <input type="hidden" name="id">
+      <label>Emoji <input name="emoji" maxlength="4" placeholder="📦"></label>
+      <label>Title <input name="title" required></label>
+      <label>List
+        <select name="list">
+          <option value="active">The Cairn</option>
+          <option value="routine">Morning Coffee</option>
+          <option value="mim">Maybe I Might</option>
+        </select>
+      </label>
+      <label>Next action date <input type="date" name="next_action_date"></label>
+      <label>Lead days <input type="number" name="lead_days" min="0" value="0"></label>
+      <label>Notes <textarea name="notes" rows="2"></textarea></label>
+      <label>Mode
+        <select name="mode">
+          <option value="manual">Manual</option>
+          <option value="auto">Auto</option>
+        </select>
+      </label>
+      <label class="auto-only">Check schedule (cron) <input name="check_schedule" placeholder="0 8 * * *"></label>
+      <label class="auto-only">Automation type
+        <select name="automation_type">
+          <option value="">—</option>
+          <option value="script">Script</option>
+          <option value="playwright">Playwright</option>
+          <option value="ai">AI</option>
+        </select>
+      </label>
+      <label class="auto-only">Automation config (JSON) <textarea name="automation_config" rows="3" placeholder='{"command":"check.sh"}'></textarea></label>
+      <div class="form-actions">
+        <button type="button" data-close-dialog class="btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

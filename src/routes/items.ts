@@ -1,0 +1,175 @@
+import { Hono } from "hono";
+import { db, logAudit } from "../db.ts";
+import { runRecheck } from "../automations/index.ts";
+import { rescheduleAll } from "../scheduler.ts";
+import type { Item, ItemList } from "../types.ts";
+
+const route = new Hono();
+
+const VALID_LISTS: ItemList[] = ["routine", "active", "mim", "archived"];
+const EDITABLE = [
+  "title",
+  "emoji",
+  "notes",
+  "next_action_date",
+  "lead_days",
+  "snoozed_until",
+  "mode",
+  "automation_type",
+  "automation_config",
+  "check_schedule",
+] as const;
+
+function getItem(id: number): Item | null {
+  return db.query<Item, [number]>("SELECT * FROM items WHERE id = ?").get(id) ?? null;
+}
+
+route.get("/", (c) => {
+  const list = c.req.query("list");
+  if (list && !VALID_LISTS.includes(list as ItemList)) {
+    return c.json({ error: "Invalid list" }, 400);
+  }
+  const rows = list
+    ? db
+        .query<Item, [string]>(
+          `SELECT * FROM items WHERE list = ?
+           ORDER BY (next_action_date IS NULL), next_action_date ASC, created_at ASC`,
+        )
+        .all(list)
+    : db
+        .query<Item, []>(
+          `SELECT * FROM items
+           ORDER BY list, (next_action_date IS NULL), next_action_date ASC`,
+        )
+        .all();
+  return c.json({ items: rows });
+});
+
+route.get("/:id", (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const item = getItem(id);
+  if (!item) return c.json({ error: "Not found" }, 404);
+  return c.json({ item });
+});
+
+route.post("/", async (c) => {
+  const body = (await c.req.json().catch(() => null)) as Partial<Item> | null;
+  if (!body?.title) return c.json({ error: "title required" }, 400);
+
+  const list: ItemList =
+    body.list && VALID_LISTS.includes(body.list) ? body.list : "active";
+  const mode = body.mode === "auto" ? "auto" : "manual";
+
+  const inserted = db
+    .query<{ id: number }, [
+      string, string, string | null, string | null, string | null, number,
+      string | null, string, string | null, string | null, string | null,
+    ]>(
+      `INSERT INTO items
+        (list, title, emoji, notes, next_action_date, lead_days, snoozed_until,
+         mode, automation_type, automation_config, check_schedule)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id`,
+    )
+    .get(
+      list,
+      body.title,
+      body.emoji ?? null,
+      body.notes ?? null,
+      body.next_action_date ?? null,
+      body.lead_days ?? 0,
+      body.snoozed_until ?? null,
+      mode,
+      body.automation_type ?? null,
+      body.automation_config ?? null,
+      body.check_schedule ?? null,
+    );
+  if (!inserted) return c.json({ error: "Insert failed" }, 500);
+
+  logAudit(inserted.id, "created", { list, mode });
+  if (mode === "auto" && body.check_schedule) rescheduleAll();
+
+  return c.json({ item: getItem(inserted.id) }, 201);
+});
+
+route.patch("/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const existing = getItem(id);
+  if (!existing) return c.json({ error: "Not found" }, 404);
+
+  const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!body) return c.json({ error: "Invalid body" }, 400);
+
+  const sets: string[] = [];
+  const values: unknown[] = [];
+  for (const f of EDITABLE) {
+    if (f in body) {
+      sets.push(`${f} = ?`);
+      values.push(body[f] ?? null);
+    }
+  }
+  if (sets.length > 0) {
+    values.push(id);
+    db.query(`UPDATE items SET ${sets.join(", ")} WHERE id = ?`).run(...(values as never[]));
+    logAudit(id, "updated", { fields: sets.map((s) => s.split(" ")[0]) });
+  }
+
+  if ("check_schedule" in body || "mode" in body) rescheduleAll();
+  return c.json({ item: getItem(id) });
+});
+
+route.post("/:id/move", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const body = (await c.req.json().catch(() => null)) as { list?: string } | null;
+  if (!body?.list || !VALID_LISTS.includes(body.list as ItemList)) {
+    return c.json({ error: "Invalid list" }, 400);
+  }
+  const existing = getItem(id);
+  if (!existing) return c.json({ error: "Not found" }, 404);
+  db.query("UPDATE items SET list = ? WHERE id = ?").run(body.list, id);
+  logAudit(id, "moved", { from: existing.list, to: body.list });
+  return c.json({ item: getItem(id) });
+});
+
+route.post("/:id/snooze", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const body = (await c.req.json().catch(() => null)) as
+    | { until?: string; days?: number }
+    | null;
+
+  let until: string;
+  if (body?.until) {
+    until = body.until;
+  } else if (body?.days && Number.isFinite(body.days)) {
+    const d = new Date();
+    d.setDate(d.getDate() + body.days);
+    until = d.toISOString().slice(0, 10);
+  } else {
+    return c.json({ error: "until (YYYY-MM-DD) or days required" }, 400);
+  }
+
+  const existing = getItem(id);
+  if (!existing) return c.json({ error: "Not found" }, 404);
+  db.query("UPDATE items SET snoozed_until = ? WHERE id = ?").run(until, id);
+  logAudit(id, "snoozed", { until });
+  return c.json({ item: getItem(id) });
+});
+
+route.post("/:id/recheck", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const existing = getItem(id);
+  if (!existing) return c.json({ error: "Not found" }, 404);
+  const result = await runRecheck(existing);
+  db.query(
+    "UPDATE items SET last_checked_at = datetime('now'), last_status = ? WHERE id = ?",
+  ).run(result.status, id);
+  logAudit(id, "recheck_manual", result);
+  return c.json({ item: getItem(id), result });
+});
+
+export default route;
