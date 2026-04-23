@@ -40,3 +40,10 @@ config/config.toml
 # OS
 .DS_Store
 Thumbs.db
+
+# Session handoff notes — not source-controlled
+HANDOFF.md
+
+# Playwright MCP scratch (screenshots, snapshots)
+.playwright-mcp/
+cairn-*.png
