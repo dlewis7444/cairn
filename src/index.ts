@@ -26,8 +26,17 @@ api.route("/routine", routineRoute);
 app.route("/api", api);
 
 // Static frontend
-app.get("/", () => {
-  return new Response(Bun.file("public/index.html"), {
+app.get("/", async () => {
+  const raw = await Bun.file("public/index.html").text();
+  const uiConfig = JSON.stringify({
+    headerMorningCoffee: env.headerMorningCoffee,
+    headerTheCairn: env.headerTheCairn,
+  });
+  const html = raw.replace(
+    "</head>",
+    `<script>window.CAIRN_UI=${uiConfig};</script></head>`,
+  );
+  return new Response(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
 });

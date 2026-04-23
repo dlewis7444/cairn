@@ -21,12 +21,21 @@
 
   <main class="main">
     <section class="section section-expanded">
-      <h2 class="section-title">Morning Coffee</h2>
+      <h2 class="section-title">
+        <span class="section-title-text">Morning Coffee</span>
+        <span class="section-note" id="morning-note"></span>
+      </h2>
       <div id="routine-list" class="routine-list"></div>
+      <div class="routine-reset">
+        <button id="routine-reset-btn" class="routine-reset-link" title="Clear today's DONE checks now (also auto-resets at midnight)">reset</button>
+      </div>
     </section>
 
     <section class="section section-expanded">
-      <h2 class="section-title">The Cairn</h2>
+      <h2 class="section-title">
+        <span class="section-title-text">The Cairn</span>
+        <span class="section-note" id="cairn-note"></span>
+      </h2>
       <div id="cairn-list" class="item-list"></div>
       <button id="add-item-btn" class="btn btn-add">+ Add item</button>
     </section>
@@ -59,7 +68,13 @@
     </header>
     <form id="item-form" class="item-form dialog-body">
       <input type="hidden" name="id">
-      <label>Emoji <input name="emoji" maxlength="4" placeholder="📦"></label>
+      <label>Emoji
+        <div class="emoji-row">
+          <input name="emoji" maxlength="4" placeholder="📦" autocomplete="off">
+          <button type="button" class="btn emoji-pick-btn" id="emoji-pick-btn" title="Pick an emoji" aria-label="Pick an emoji">☺</button>
+        </div>
+        <div class="emoji-picker" id="emoji-picker" hidden role="listbox" aria-label="Choose emoji"></div>
+      </label>
       <label>Title <input name="title" required></label>
       <label>List
         <select name="list">

@@ -21,6 +21,15 @@ route.get("/today", (c) => {
   });
 });
 
+route.post("/reset-today", (c) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const result = db
+    .query("DELETE FROM routine_completions WHERE completed_on = ?")
+    .run(today);
+  logAudit(null, "routine_reset", { date: today, deleted: result.changes });
+  return c.json({ ok: true, date: today, deleted: result.changes });
+});
+
 route.post("/:id/complete", (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);

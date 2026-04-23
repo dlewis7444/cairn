@@ -107,9 +107,10 @@ function describeDue(dateIso: string): string {
   due.setHours(0, 0, 0, 0);
   const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return `overdue by ${Math.abs(diffDays)}d`;
-  if (diffDays === 0) return "due today";
-  if (diffDays === 1) return "due tomorrow";
-  return `due in ${diffDays}d`;
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+  const dow = due.toLocaleDateString(undefined, { weekday: "short" });
+  return `${diffDays}d (${dow})`;
 }
 
 function describeStats(): string {

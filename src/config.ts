@@ -42,4 +42,10 @@ export const env = {
   publicUrl: (process.env.CAIRN_PUBLIC_URL ?? "").replace(/\/$/, ""),
   dbPath: process.env.CAIRN_DB_PATH ?? "data/cairn.sqlite",
   backupDir: process.env.CAIRN_BACKUP_DIR ?? "backups",
+  headerMorningCoffee:
+    process.env.CAIRN_HEADER_MORNING_COFFEE ??
+    "It would be good if you made these your morning habits",
+  headerTheCairn:
+    process.env.CAIRN_HEADER_THE_CAIRN ??
+    "This is not a todo list but a 'watch list' - these are things you want to keep aware of, not tasks you have to do",
 };
