@@ -39,6 +39,7 @@ export const env = {
     to: process.env.SMTP_TO ?? "",
   },
   backupTarget: process.env.BACKUP_RSYNC_TARGET ?? "",
+  publicUrl: (process.env.CAIRN_PUBLIC_URL ?? "").replace(/\/$/, ""),
   dbPath: process.env.CAIRN_DB_PATH ?? "data/cairn.sqlite",
   backupDir: process.env.CAIRN_BACKUP_DIR ?? "backups",
 };

@@ -67,11 +67,17 @@ function renderDigest(
   const tagline = config.ui.tagline;
   const prefix = config.digest.subject_prefix;
 
+  const url = env.publicUrl;
+  const textLink = url ? `\nOpen Cairn: ${url}\n` : "";
+  const htmlLink = url
+    ? `<p style="margin:0 0 16px 0;"><a href="${escape(url)}" style="color:#5f6e4f;text-decoration:none;">open Cairn →</a></p>`
+    : "";
+
   if (items.length === 0) {
     const stats = describeStats();
     const subject = `${prefix} ${today} — nothing imminent`;
-    const text = `Good morning.\n\nNothing imminent today. ${stats}\n\n— ${tagline}\n`;
-    const html = `<p>Good morning.</p><p>Nothing imminent today. ${escape(stats)}</p><p style="color:#888;font-size:12px;">— ${escape(tagline)}</p>`;
+    const text = `Good morning.\n${textLink}\nNothing imminent today. ${stats}\n\n— ${tagline}\n`;
+    const html = `<p>Good morning.</p>${htmlLink}<p>Nothing imminent today. ${escape(stats)}</p><p style="color:#888;font-size:12px;">— ${escape(tagline)}</p>`;
     return { subject, html, text };
   }
 
@@ -81,7 +87,7 @@ function renderDigest(
     return `- ${emoji}${it.title} — ${due}${it.notes ? ` (${it.notes})` : ""}`;
   });
   const subject = `${prefix} ${items.length} item${items.length === 1 ? "" : "s"} on the cairn`;
-  const text = `Good morning.\n\n${textLines.join("\n")}\n\n— ${tagline}\n`;
+  const text = `Good morning.\n${textLink}\n${textLines.join("\n")}\n\n— ${tagline}\n`;
   const htmlLines = items
     .map((it) => {
       const emoji = it.emoji ? `${escape(it.emoji)} ` : "";
@@ -90,7 +96,7 @@ function renderDigest(
       return `<li>${emoji}<strong>${escape(it.title)}</strong> — ${escape(due)}${notes}</li>`;
     })
     .join("");
-  const html = `<p>Good morning.</p><ul>${htmlLines}</ul><p style="color:#888;font-size:12px;">— ${escape(tagline)}</p>`;
+  const html = `<p>Good morning.</p>${htmlLink}<ul>${htmlLines}</ul><p style="color:#888;font-size:12px;">— ${escape(tagline)}</p>`;
   return { subject, html, text };
 }
 
