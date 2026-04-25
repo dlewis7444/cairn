@@ -48,4 +48,5 @@ export const env = {
   headerTheCairn:
     process.env.CAIRN_HEADER_THE_CAIRN ??
     "This is not a todo list but a 'watch list' - these are things you want to keep aware of, not tasks you have to do",
+  searxngUrl: (process.env.CAIRN_SEARXNG_URL ?? "").replace(/\/$/, ""),
 };

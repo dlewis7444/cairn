@@ -49,9 +49,15 @@ export function startScheduler(): void {
           try {
             const result = await runRecheck(item);
             logAudit(item.id, "recheck_scheduled", result);
-            db.query(
-              `UPDATE items SET last_checked_at = datetime('now'), last_status = ? WHERE id = ?`,
-            ).run(result.status, item.id);
+            if (result.notesUpdate != null) {
+              db.query(
+                `UPDATE items SET last_checked_at = datetime('now'), last_status = ?, notes = ? WHERE id = ?`,
+              ).run(result.status, result.notesUpdate, item.id);
+            } else {
+              db.query(
+                `UPDATE items SET last_checked_at = datetime('now'), last_status = ? WHERE id = ?`,
+              ).run(result.status, item.id);
+            }
           } catch (err) {
             logAudit(item.id, "recheck_error", { error: String(err) });
           }

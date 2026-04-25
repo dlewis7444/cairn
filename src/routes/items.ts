@@ -165,9 +165,15 @@ route.post("/:id/recheck", async (c) => {
   const existing = getItem(id);
   if (!existing) return c.json({ error: "Not found" }, 404);
   const result = await runRecheck(existing);
-  db.query(
-    "UPDATE items SET last_checked_at = datetime('now'), last_status = ? WHERE id = ?",
-  ).run(result.status, id);
+  if (result.notesUpdate != null) {
+    db.query(
+      "UPDATE items SET last_checked_at = datetime('now'), last_status = ?, notes = ? WHERE id = ?",
+    ).run(result.status, result.notesUpdate, id);
+  } else {
+    db.query(
+      "UPDATE items SET last_checked_at = datetime('now'), last_status = ? WHERE id = ?",
+    ).run(result.status, id);
+  }
   logAudit(id, "recheck_manual", result);
   return c.json({ item: getItem(id), result });
 });

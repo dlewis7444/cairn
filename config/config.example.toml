@@ -23,11 +23,32 @@ retention_count = 14
 name = "Cairn"
 tagline = "Stones on the trail."
 
-# === AI providers (reserved; not used in MVP) ===
-# [ai.providers.anthropic]
-# models = ["claude-sonnet-4-6", "claude-opus-4-7"]
-# api_key_env = "ANTHROPIC_API_KEY"
+# === AI providers ===
+# Structural config (URLs, model lists, which env var holds the key) lives here.
+# Secrets (the actual API keys) live in .env.local, referenced by `api_key_env`.
+# Mirror of the dual-layer pattern used by another app (llm.config.json + env).
 #
-# [ai.providers.ollama]
-# base_url = "http://localhost:11434"
-# models = ["llama3.1:70b"]
+# Scaffolding only in this release — the runtime does not yet read `[ai]`.
+# Edit freely; it won't break anything until the auto-check AI runner lands.
+
+[ai]
+default_provider = "ollama_cloud"
+default_model = "kimi-k2.6"
+
+[ai.providers.anthropic]
+type = "anthropic"
+base_url = "https://api.anthropic.com"
+api_key_env = "ANTHROPIC_API_KEY"
+models = ["claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"]
+
+[ai.providers.ollama_cloud]
+type = "openai_compat"
+base_url = "https://ollama.com/v1"
+api_key_env = "OLLAMA_API_KEY"
+models = ["kimi-k2.6", "gpt-oss:120b", "deepseek-v3.1:671b"]
+
+[ai.providers.ollama_local]
+type = "openai_compat"
+base_url = "http://localhost:11434/v1"
+# No api_key_env — local ollama is unauthenticated.
+models = ["llama3.1:70b"]

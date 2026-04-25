@@ -66,9 +66,8 @@ const EMOJI_PALETTE = [
   "⚠️","🔔","⏰","⭐","❤️","✨","🎁","🎂",
 ];
 
-const COMPLETED_ICONS = ["☀️", "✨", "🪨", "⭐", "🌿", "☕", "🌾"];
-function completedIcon(seed) {
-  return COMPLETED_ICONS[seed % COMPLETED_ICONS.length];
+function stoneTilt(seed) {
+  return ((seed * 17) % 9) - 4;
 }
 
 const SVG_ATTRS = 'viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
@@ -96,10 +95,10 @@ function renderRoutine(items) {
       if (it.completed_today) {
         return `<div class="routine-row completed" data-id="${it.id}">
           ${emoji}<span class="routine-title">${escapeHtml(it.title)}</span>
-          <span class="routine-done" aria-label="done">${completedIcon(it.id)}</span>
+          <span class="routine-done" aria-label="done" style="--stone-tilt:${stoneTilt(it.id)}deg">🪨</span>
         </div>`;
       }
-      return `<div class="routine-row" data-id="${it.id}">
+      return `<div class="routine-row" data-id="${it.id}" data-editable="1">
         ${emoji}<span class="routine-title">${escapeHtml(it.title)}</span>
         <button class="routine-btn" data-action="routine-complete">DONE</button>
       </div>`;
@@ -237,6 +236,14 @@ document.addEventListener("click", async (e) => {
     return;
   }
 
+  // Add item (must run before section-toggle so "+" in MIM header doesn't collapse)
+  const addBtn = target.closest('[data-action="add-item"]');
+  if (addBtn) {
+    e.stopPropagation();
+    openItemDialog({ list: addBtn.dataset.list });
+    return;
+  }
+
   // Section toggle (clicking title or the icon span)
   const toggle = target.closest(".section-toggle");
   if (toggle) {
@@ -261,12 +268,6 @@ document.addEventListener("click", async (e) => {
     } finally {
       target.disabled = false;
     }
-    return;
-  }
-
-  // Add item
-  if (target.id === "add-item-btn") {
-    openItemDialog();
     return;
   }
 
@@ -308,12 +309,8 @@ document.addEventListener("click", async (e) => {
   }
 
   if (!action) {
-    // Click-to-edit: anywhere on an editable item row that isn't a button or the due label
-    if (
-      row.classList.contains("item-row") &&
-      row.dataset.editable === "1" &&
-      !target.closest("button")
-    ) {
+    // Click-to-edit: anywhere on an editable row that isn't a button or the due label
+    if (row.dataset.editable === "1" && !target.closest("button")) {
       try {
         const { item } = await api(`/items/${id}`);
         openItemDialog(item);
@@ -389,26 +386,28 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-function openItemDialog(item = null) {
+function openItemDialog(seed = null) {
   const dialog = document.getElementById("item-dialog");
   const form = document.getElementById("item-form");
   form.reset();
   closeEmojiPicker();
-  document.getElementById("item-dialog-title").textContent = item ? "Edit item" : "Add item";
-  if (item) {
-    form.id.value = item.id;
-    form.emoji.value = item.emoji || "";
-    form.title.value = item.title;
-    form.list.value = item.list;
-    form.next_action_date.value = item.next_action_date || "";
-    form.lead_days.value = item.lead_days ?? 0;
-    form.notes.value = item.notes || "";
-    form.mode.value = item.mode || "manual";
-    form.check_schedule.value = item.check_schedule || "";
-    form.automation_type.value = item.automation_type || "";
-    form.automation_config.value = item.automation_config || "";
+  const editing = !!(seed && seed.id);
+  document.getElementById("item-dialog-title").textContent = editing ? "Edit item" : "Add item";
+  if (editing) {
+    form.id.value = seed.id;
+    form.emoji.value = seed.emoji || "";
+    form.title.value = seed.title;
+    form.list.value = seed.list;
+    form.next_action_date.value = seed.next_action_date || "";
+    form.lead_days.value = seed.lead_days ?? 0;
+    form.notes.value = seed.notes || "";
+    form.mode.value = seed.mode || "manual";
+    form.check_schedule.value = seed.check_schedule || "";
+    form.automation_type.value = seed.automation_type || "";
+    form.automation_config.value = seed.automation_config || "";
   } else {
     form.id.value = "";
+    if (seed && seed.list) form.list.value = seed.list;
   }
   form.classList.toggle("mode-auto", form.mode.value === "auto");
   dialog.showModal();
