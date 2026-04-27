@@ -79,6 +79,14 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.section-count {
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--muted);
+  opacity: 0.7;
+}
 .section-title-add {
   margin-left: auto;
   flex: 0 0 auto;
@@ -173,8 +181,10 @@ body {
   gap: 0.75rem;
   align-items: center;
 }
-.item-row[data-editable="1"] { cursor: pointer; transition: background 0.12s, border-color 0.12s; }
-.item-row[data-editable="1"]:hover { background: var(--row-hover); border-color: var(--accent); }
+.item-row[data-editable="1"],
+.routine-row[data-editable="1"] { cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.item-row[data-editable="1"]:hover,
+.routine-row[data-editable="1"]:hover { background: var(--row-hover); border-color: var(--accent); }
 
 .item-due {
   position: relative;

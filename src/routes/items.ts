@@ -104,6 +104,14 @@ route.patch("/:id", async (c) => {
 
   const sets: string[] = [];
   const values: unknown[] = [];
+  if ("list" in body) {
+    const newList = body.list;
+    if (typeof newList !== "string" || !VALID_LISTS.includes(newList as ItemList)) {
+      return c.json({ error: "Invalid list" }, 400);
+    }
+    sets.push("list = ?");
+    values.push(newList);
+  }
   for (const f of EDITABLE) {
     if (f in body) {
       sets.push(`${f} = ?`);
@@ -116,7 +124,7 @@ route.patch("/:id", async (c) => {
     logAudit(id, "updated", { fields: sets.map((s) => s.split(" ")[0]) });
   }
 
-  if ("check_schedule" in body || "mode" in body) rescheduleAll();
+  if ("check_schedule" in body || "mode" in body || "list" in body) rescheduleAll();
   return c.json({ item: getItem(id) });
 });
 

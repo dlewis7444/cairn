@@ -24,12 +24,18 @@ async function api(path, options = {}) {
   return res.json();
 }
 
+function parseLocalDate(iso) {
+  // Parse a YYYY-MM-DD as local midnight (NOT UTC — `new Date("2026-04-28")`
+  // is UTC midnight, which lands on the prior day in negative-UTC zones).
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function relTime(iso) {
   if (!iso) return "—";
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = new Date(iso);
-  due.setHours(0, 0, 0, 0);
+  const due = parseLocalDate(iso);
   const days = Math.round((due - today) / 86400000);
   if (days < 0) return `overdue ${Math.abs(days)}d`;
   if (days === 0) return "today";
@@ -174,6 +180,8 @@ async function refreshAll() {
     renderRoutine(routine.items);
     renderItemList("cairn-list", active.items, { emptyText: "Nothing on the cairn yet." });
     renderItemList("mim-list", mim.items, { mim: true, emptyText: "Empty." });
+    const mimCount = document.getElementById("mim-count");
+    if (mimCount) mimCount.textContent = mim.items.length ? `(${mim.items.length})` : "";
   } catch (err) {
     if (String(err).includes("401")) {
       location.reload();

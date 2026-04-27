@@ -103,8 +103,9 @@ function renderDigest(
 function describeDue(dateIso: string): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = new Date(dateIso);
-  due.setHours(0, 0, 0, 0);
+  // Parse YYYY-MM-DD as local midnight (avoid UTC interpretation drifting the day).
+  const [y, m, d] = dateIso.split("-").map(Number) as [number, number, number];
+  const due = new Date(y, m - 1, d);
   const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return `overdue by ${Math.abs(diffDays)}d`;
   if (diffDays === 0) return "today";
