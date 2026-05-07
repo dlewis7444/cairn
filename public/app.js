@@ -282,14 +282,21 @@ function itemRowHtml(it, opts) {
   </div>`;
 }
 
+let lastFingerprint = null;
+
 async function refreshAll() {
   document.getElementById("today-date").textContent = todayLabel();
+  // Don't tear down an in-progress drag with a poll-driven re-render.
+  if (document.querySelector(".routine-row.dragging")) return;
   try {
     const [routine, active, mim] = await Promise.all([
       api("/routine/today"),
       api("/items?list=active"),
       api("/items?list=mim"),
     ]);
+    const fp = JSON.stringify([routine, active, mim]);
+    if (fp === lastFingerprint) return;
+    lastFingerprint = fp;
     renderRoutine(routine.items);
     initRoutineDrag();
     renderItemList("cairn-list", active.items, { emptyText: "Nothing on the cairn yet." });
@@ -607,3 +614,11 @@ function applyUiConfig() {
 applyUiConfig();
 
 refreshAll();
+
+// Auto-refresh when the tab regains focus (catches overnight cron resets) and
+// poll every 60s as a fallback. Render only fires when the response actually
+// differs (see lastFingerprint), so idle ticks are invisible.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshAll();
+});
+setInterval(refreshAll, 60000);
