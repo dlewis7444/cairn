@@ -117,74 +117,107 @@ function initRoutineDrag() {
   if (!container || container.dataset.dragWired === "1") return;
   container.dataset.dragWired = "1";
 
-  let draggedId = null;
+  let draggedEl = null;
+  let lastTarget = null;
+  let lastHalf = null;
+  let originalOrder = "";
+  let dropped = false;
+
+  function snapshotOrder() {
+    return Array.from(container.querySelectorAll(".routine-row"))
+      .map((el) => el.dataset.id)
+      .join(",");
+  }
+
+  // FLIP: capture row positions, mutate DOM, then invert + animate displaced rows
+  // back to where they were and let CSS transition them to their new home.
+  function flipMove(mutate) {
+    const rows = Array.from(container.querySelectorAll(".routine-row"));
+    const before = new Map(
+      rows.map((el) => [el, el.getBoundingClientRect().top]),
+    );
+    mutate();
+    for (const el of rows) {
+      if (el === draggedEl) continue;
+      const dy = before.get(el) - el.getBoundingClientRect().top;
+      if (Math.abs(dy) < 0.5) continue;
+      el.style.transition = "none";
+      el.style.transform = `translateY(${dy}px)`;
+      requestAnimationFrame(() => {
+        el.style.transition = "transform 160ms ease-out";
+        el.style.transform = "";
+        el.addEventListener(
+          "transitionend",
+          () => {
+            el.style.transition = "";
+            el.style.transform = "";
+          },
+          { once: true },
+        );
+      });
+    }
+  }
 
   container.addEventListener("dragstart", (e) => {
     const row = e.target.closest(".routine-row");
     if (!row) return;
-    draggedId = row.dataset.id;
+    draggedEl = row;
+    originalOrder = snapshotOrder();
+    dropped = false;
+    lastTarget = null;
+    lastHalf = null;
     row.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
-    // Some browsers need data set to initiate drag.
-    e.dataTransfer.setData("text/plain", draggedId);
-  });
-
-  container.addEventListener("dragend", (e) => {
-    const row = e.target.closest(".routine-row");
-    if (row) row.classList.remove("dragging");
-    container
-      .querySelectorAll(".drag-over-before, .drag-over-after")
-      .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after"));
-    draggedId = null;
+    e.dataTransfer.setData("text/plain", row.dataset.id);
   });
 
   container.addEventListener("dragover", (e) => {
-    if (!draggedId) return;
+    if (!draggedEl) return;
     const row = e.target.closest(".routine-row");
-    if (!row || row.dataset.id === draggedId) return;
+    if (!row || row === draggedEl) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     const rect = row.getBoundingClientRect();
     const after = e.clientY > rect.top + rect.height / 2;
-    container
-      .querySelectorAll(".drag-over-before, .drag-over-after")
-      .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after"));
-    row.classList.add(after ? "drag-over-after" : "drag-over-before");
+    if (row === lastTarget && after === lastHalf) return;
+    lastTarget = row;
+    lastHalf = after;
+    flipMove(() => {
+      if (after) row.parentNode.insertBefore(draggedEl, row.nextSibling);
+      else row.parentNode.insertBefore(draggedEl, row);
+    });
   });
 
-  container.addEventListener("dragleave", (e) => {
-    const row = e.target.closest(".routine-row");
-    if (row && !row.contains(e.relatedTarget)) {
-      row.classList.remove("drag-over-before", "drag-over-after");
-    }
-  });
-
-  container.addEventListener("drop", async (e) => {
-    if (!draggedId) return;
-    const target = e.target.closest(".routine-row");
-    if (!target || target.dataset.id === draggedId) return;
-    e.preventDefault();
-    const rect = target.getBoundingClientRect();
-    const after = e.clientY > rect.top + rect.height / 2;
-
-    const draggedEl = container.querySelector(`.routine-row[data-id="${draggedId}"]`);
+  container.addEventListener("drop", (e) => {
     if (!draggedEl) return;
-    target.parentNode.insertBefore(draggedEl, after ? target.nextSibling : target);
+    e.preventDefault();
+    dropped = true;
+  });
 
-    const ids = Array.from(container.querySelectorAll(".routine-row")).map((el) =>
-      Number(el.dataset.id),
-    );
-    container
-      .querySelectorAll(".drag-over-before, .drag-over-after")
-      .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after"));
+  container.addEventListener("dragend", async () => {
+    if (!draggedEl) return;
+    draggedEl.classList.remove("dragging");
+    const wasDropped = dropped;
+    const finalOrder = snapshotOrder();
+    const changed = finalOrder !== originalOrder;
+    draggedEl = null;
+    lastTarget = null;
+    lastHalf = null;
+    dropped = false;
 
-    try {
-      await api("/routine/reorder", {
-        method: "POST",
-        body: JSON.stringify({ ids }),
-      });
-    } catch (err) {
-      alert("Reorder failed: " + err.message);
+    if (wasDropped && changed) {
+      const ids = finalOrder.split(",").map(Number);
+      try {
+        await api("/routine/reorder", {
+          method: "POST",
+          body: JSON.stringify({ ids }),
+        });
+      } catch (err) {
+        alert("Reorder failed: " + err.message);
+        await refreshAll();
+      }
+    } else if (changed) {
+      // user cancelled mid-drag (drop outside target) — restore original order
       await refreshAll();
     }
   });

@@ -123,9 +123,12 @@ body {
   cursor: grab;
 }
 .routine-row:active { cursor: grabbing; }
-.routine-row.dragging { opacity: 0.4; }
-.routine-row.drag-over-before { box-shadow: 0 -2px 0 0 var(--accent); }
-.routine-row.drag-over-after  { box-shadow: 0  2px 0 0 var(--accent); }
+.routine-row.dragging {
+  opacity: 0.35;
+  pointer-events: none;
+  border-style: dashed;
+  border-color: var(--accent);
+}
 .routine-row .routine-emoji { font-size: 1.15rem; }
 .routine-row .routine-title { flex: 1; }
 .routine-row.completed { color: var(--muted); }
