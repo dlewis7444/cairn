@@ -669,6 +669,12 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// Keep focus on the contenteditable note when the reset button is pressed,
+// otherwise blur fires before click and commitNoteEdit hides the button.
+document.addEventListener("mousedown", (e) => {
+  if (e.target.closest(".note-reset-btn")) e.preventDefault();
+});
+
 document.addEventListener("click", async (e) => {
   const reset = e.target.closest(".note-reset-btn");
   if (!reset) return;
