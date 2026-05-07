@@ -76,6 +76,8 @@ function stoneTilt(seed) {
   return ((seed * 17) % 9) - 4;
 }
 
+const STONE_SVG = `<svg class="routine-stone" viewBox="0 0 24 16" aria-hidden="true"><path class="routine-stone-body" d="M2.5 9 C 2.5 5, 6 3.5, 11 3.5 C 19 3.5, 21.5 6.5, 21.5 10 C 21.5 13, 18 14.5, 11 14.5 C 5 14.5, 2.5 13, 2.5 9 Z"/><ellipse class="routine-stone-shine" cx="8.5" cy="6.5" rx="3.5" ry="1.2"/></svg>`;
+
 const SVG_ATTRS = 'viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 const ICONS = {
   gonna:   `<svg ${SVG_ATTRS}><polyline points="20 6 9 17 4 12"/></svg>`,
@@ -101,7 +103,7 @@ function renderRoutine(items) {
       if (it.completed_today) {
         return `<div class="routine-row completed" data-id="${it.id}" draggable="true">
           ${emoji}<span class="routine-title">${escapeHtml(it.title)}</span>
-          <span class="routine-done" aria-label="done" style="--stone-tilt:${stoneTilt(it.id)}deg">🪨</span>
+          <span class="routine-done" aria-label="done" style="--stone-tilt:${stoneTilt(it.id)}deg">${STONE_SVG}</span>
         </div>`;
       }
       return `<div class="routine-row" data-id="${it.id}" data-editable="1" draggable="true">

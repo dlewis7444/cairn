@@ -128,13 +128,20 @@ body {
 .routine-row .routine-title { flex: 1; }
 .routine-row.completed { color: var(--muted); }
 .routine-row .routine-done {
-  font-size: 1.3rem;
   line-height: 1;
   padding: 0 0.4rem;
   display: inline-block;
   animation: stoneSettle 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
   transform: rotate(var(--stone-tilt, 0deg));
 }
+.routine-stone {
+  width: 22px;
+  height: 15px;
+  display: block;
+  filter: drop-shadow(0 1px 0 rgba(43, 42, 38, 0.18));
+}
+.routine-stone-body { fill: var(--accent); }
+.routine-stone-shine { fill: #fff; opacity: 0.22; }
 @keyframes stoneSettle {
   0%   { transform: translateY(-8px) rotate(0deg); opacity: 0; }
   60%  { transform: translateY(1px) rotate(calc(var(--stone-tilt, 0deg) * 0.7)); opacity: 1; }
