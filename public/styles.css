@@ -135,13 +135,10 @@ body {
   transform: rotate(var(--stone-tilt, 0deg));
 }
 .routine-stone {
-  width: 22px;
-  height: 15px;
+  width: 26px;
+  height: 26px;
   display: block;
-  filter: drop-shadow(0 1px 0 rgba(43, 42, 38, 0.18));
 }
-.routine-stone-body { fill: var(--accent); }
-.routine-stone-shine { fill: #fff; opacity: 0.22; }
 @keyframes stoneSettle {
   0%   { transform: translateY(-8px) rotate(0deg); opacity: 0; }
   60%  { transform: translateY(1px) rotate(calc(var(--stone-tilt, 0deg) * 0.7)); opacity: 1; }

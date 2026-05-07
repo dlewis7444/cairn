@@ -76,7 +76,7 @@ function stoneTilt(seed) {
   return ((seed * 17) % 9) - 4;
 }
 
-const STONE_SVG = `<svg class="routine-stone" viewBox="0 0 24 16" aria-hidden="true"><path class="routine-stone-body" d="M2.5 9 C 2.5 5, 6 3.5, 11 3.5 C 19 3.5, 21.5 6.5, 21.5 10 C 21.5 13, 18 14.5, 11 14.5 C 5 14.5, 2.5 13, 2.5 9 Z"/><ellipse class="routine-stone-shine" cx="8.5" cy="6.5" rx="3.5" ry="1.2"/></svg>`;
+const STONE_SVG = `<svg class="routine-stone" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="13" rx="6" ry="3.5" fill="var(--muted)"/><ellipse cx="32" cy="22" rx="10" ry="5" fill="var(--accent-warm)"/><ellipse cx="32" cy="33" rx="14" ry="6.5" fill="var(--slate)"/><ellipse cx="32" cy="46" rx="20" ry="9" fill="var(--accent)"/><line x1="6" y1="56" x2="58" y2="56" stroke="var(--border)" stroke-width="1" stroke-linecap="round"/></svg>`;
 
 const SVG_ATTRS = 'viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 const ICONS = {
