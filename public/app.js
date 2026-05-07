@@ -108,7 +108,7 @@ function renderRoutine(items) {
       }
       return `<div class="routine-row" data-id="${it.id}" data-editable="1" draggable="true">
         ${emoji}<span class="routine-title">${escapeHtml(it.title)}</span>
-        <button class="routine-btn" data-action="routine-complete">DONE</button>
+        <button class="routine-btn" data-action="routine-complete">HABIT IMPROVED</button>
       </div>`;
     })
     .join("");
