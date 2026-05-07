@@ -7,7 +7,10 @@ const route = new Hono();
 route.get("/today", (c) => {
   const today = new Date().toISOString().slice(0, 10);
   const items = db
-    .query<Item, []>("SELECT * FROM items WHERE list = 'routine' ORDER BY id ASC")
+    .query<Item, []>(
+      `SELECT * FROM items WHERE list = 'routine'
+       ORDER BY COALESCE(sort_order, id) ASC, id ASC`,
+    )
     .all();
   const completed = db
     .query<{ item_id: number }, [string]>(
@@ -28,6 +31,30 @@ route.post("/reset-today", (c) => {
     .run(today);
   logAudit(null, "routine_reset", { date: today, deleted: result.changes });
   return c.json({ ok: true, date: today, deleted: result.changes });
+});
+
+route.post("/reorder", async (c) => {
+  const body = (await c.req.json().catch(() => null)) as { ids?: unknown } | null;
+  const ids = body?.ids;
+  if (!Array.isArray(ids) || !ids.every((n) => Number.isInteger(n))) {
+    return c.json({ error: "ids must be an array of integers" }, 400);
+  }
+  const routineIds = new Set(
+    db
+      .query<{ id: number }, []>("SELECT id FROM items WHERE list = 'routine'")
+      .all()
+      .map((r) => r.id),
+  );
+  if (ids.length !== routineIds.size || !ids.every((id) => routineIds.has(id as number))) {
+    return c.json({ error: "ids must match the current routine list exactly" }, 400);
+  }
+  const update = db.query("UPDATE items SET sort_order = ? WHERE id = ?");
+  const tx = db.transaction((arr: number[]) => {
+    arr.forEach((id, i) => update.run(i, id));
+  });
+  tx(ids as number[]);
+  logAudit(null, "routine_reorder", { ids });
+  return c.json({ ok: true, ids });
 });
 
 route.post("/:id/complete", (c) => {

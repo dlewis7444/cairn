@@ -120,7 +120,12 @@ body {
   border-radius: 8px;
   padding: 0.85rem 1.1rem;
   transition: background 1.5s ease-out;
+  cursor: grab;
 }
+.routine-row:active { cursor: grabbing; }
+.routine-row.dragging { opacity: 0.4; }
+.routine-row.drag-over-before { box-shadow: 0 -2px 0 0 var(--accent); }
+.routine-row.drag-over-after  { box-shadow: 0  2px 0 0 var(--accent); }
 .routine-row .routine-emoji { font-size: 1.15rem; }
 .routine-row .routine-title { flex: 1; }
 .routine-row.completed { color: var(--muted); }

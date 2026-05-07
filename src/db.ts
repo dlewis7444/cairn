@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS items (
   check_schedule TEXT,
   last_checked_at TEXT,
   last_status TEXT,
+  sort_order INTEGER,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -57,6 +58,14 @@ END;
 `;
 
 db.exec(SCHEMA);
+
+const itemsCols = db
+  .query<{ name: string }, []>("PRAGMA table_info(items)")
+  .all()
+  .map((r) => r.name);
+if (!itemsCols.includes("sort_order")) {
+  db.exec("ALTER TABLE items ADD COLUMN sort_order INTEGER");
+}
 
 export function logAudit(itemId: number | null, eventType: string, details?: unknown): void {
   db.query("INSERT INTO audit_log (item_id, event_type, details) VALUES (?, ?, ?)").run(

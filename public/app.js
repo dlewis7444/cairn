@@ -99,17 +99,95 @@ function renderRoutine(items) {
     .map((it) => {
       const emoji = it.emoji ? `<span class="routine-emoji">${escapeHtml(it.emoji)}</span>` : "";
       if (it.completed_today) {
-        return `<div class="routine-row completed" data-id="${it.id}">
+        return `<div class="routine-row completed" data-id="${it.id}" draggable="true">
           ${emoji}<span class="routine-title">${escapeHtml(it.title)}</span>
           <span class="routine-done" aria-label="done" style="--stone-tilt:${stoneTilt(it.id)}deg">🪨</span>
         </div>`;
       }
-      return `<div class="routine-row" data-id="${it.id}" data-editable="1">
+      return `<div class="routine-row" data-id="${it.id}" data-editable="1" draggable="true">
         ${emoji}<span class="routine-title">${escapeHtml(it.title)}</span>
         <button class="routine-btn" data-action="routine-complete">DONE</button>
       </div>`;
     })
     .join("");
+}
+
+function initRoutineDrag() {
+  const container = document.getElementById("routine-list");
+  if (!container || container.dataset.dragWired === "1") return;
+  container.dataset.dragWired = "1";
+
+  let draggedId = null;
+
+  container.addEventListener("dragstart", (e) => {
+    const row = e.target.closest(".routine-row");
+    if (!row) return;
+    draggedId = row.dataset.id;
+    row.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    // Some browsers need data set to initiate drag.
+    e.dataTransfer.setData("text/plain", draggedId);
+  });
+
+  container.addEventListener("dragend", (e) => {
+    const row = e.target.closest(".routine-row");
+    if (row) row.classList.remove("dragging");
+    container
+      .querySelectorAll(".drag-over-before, .drag-over-after")
+      .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after"));
+    draggedId = null;
+  });
+
+  container.addEventListener("dragover", (e) => {
+    if (!draggedId) return;
+    const row = e.target.closest(".routine-row");
+    if (!row || row.dataset.id === draggedId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = row.getBoundingClientRect();
+    const after = e.clientY > rect.top + rect.height / 2;
+    container
+      .querySelectorAll(".drag-over-before, .drag-over-after")
+      .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after"));
+    row.classList.add(after ? "drag-over-after" : "drag-over-before");
+  });
+
+  container.addEventListener("dragleave", (e) => {
+    const row = e.target.closest(".routine-row");
+    if (row && !row.contains(e.relatedTarget)) {
+      row.classList.remove("drag-over-before", "drag-over-after");
+    }
+  });
+
+  container.addEventListener("drop", async (e) => {
+    if (!draggedId) return;
+    const target = e.target.closest(".routine-row");
+    if (!target || target.dataset.id === draggedId) return;
+    e.preventDefault();
+    const rect = target.getBoundingClientRect();
+    const after = e.clientY > rect.top + rect.height / 2;
+
+    const draggedEl = container.querySelector(`.routine-row[data-id="${draggedId}"]`);
+    if (!draggedEl) return;
+    target.parentNode.insertBefore(draggedEl, after ? target.nextSibling : target);
+
+    const ids = Array.from(container.querySelectorAll(".routine-row")).map((el) =>
+      Number(el.dataset.id),
+    );
+    container
+      .querySelectorAll(".drag-over-before, .drag-over-after")
+      .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after"));
+
+    try {
+      await api("/routine/reorder", {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      alert("Reorder failed: " + err.message);
+      await refreshAll();
+    }
+  });
 }
 
 function renderItemList(containerId, items, opts = {}) {
@@ -178,6 +256,7 @@ async function refreshAll() {
       api("/items?list=mim"),
     ]);
     renderRoutine(routine.items);
+    initRoutineDrag();
     renderItemList("cairn-list", active.items, { emptyText: "Nothing on the cairn yet." });
     renderItemList("mim-list", mim.items, { mim: true, emptyText: "Empty." });
     const mimCount = document.getElementById("mim-count");

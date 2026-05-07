@@ -17,6 +17,7 @@ export interface Item {
   check_schedule: string | null;
   last_checked_at: string | null;
   last_status: string | null;
+  sort_order: number | null;
   created_at: string;
   updated_at: string;
 }
