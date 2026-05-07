@@ -8,6 +8,7 @@ import itemsRoute from "./routes/items.ts";
 import digestRoute from "./routes/digest.ts";
 import auditRoute from "./routes/audit.ts";
 import routineRoute from "./routes/routine.ts";
+import settingsRoute, { uiSettings } from "./routes/settings.ts";
 
 // Load config eagerly so a malformed/missing config fails at startup.
 loadConfig();
@@ -23,15 +24,13 @@ api.route("/items", itemsRoute);
 api.route("/digest", digestRoute);
 api.route("/audit", auditRoute);
 api.route("/routine", routineRoute);
+api.route("/settings", settingsRoute);
 app.route("/api", api);
 
 // Static frontend
 app.get("/", async () => {
   const raw = await Bun.file("public/index.html").text();
-  const uiConfig = JSON.stringify({
-    headerMorningCoffee: env.headerMorningCoffee,
-    headerTheCairn: env.headerTheCairn,
-  });
+  const uiConfig = JSON.stringify(uiSettings());
   const html = raw.replace(
     "</head>",
     `<script>window.CAIRN_UI=${uiConfig};</script></head>`,

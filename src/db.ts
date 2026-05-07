@@ -50,6 +50,12 @@ CREATE TABLE IF NOT EXISTS routine_completions (
   PRIMARY KEY (item_id, completed_on)
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TRIGGER IF NOT EXISTS items_updated_at AFTER UPDATE ON items
 FOR EACH ROW
 BEGIN

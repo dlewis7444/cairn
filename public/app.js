@@ -282,27 +282,37 @@ function itemRowHtml(it, opts) {
   </div>`;
 }
 
-let lastFingerprint = null;
+let lastListsFp = null;
+let lastSettingsFp = null;
 
 async function refreshAll() {
   document.getElementById("today-date").textContent = todayLabel();
   // Don't tear down an in-progress drag with a poll-driven re-render.
   if (document.querySelector(".routine-row.dragging")) return;
   try {
-    const [routine, active, mim] = await Promise.all([
+    const [routine, active, mim, settings] = await Promise.all([
       api("/routine/today"),
       api("/items?list=active"),
       api("/items?list=mim"),
+      api("/settings"),
     ]);
-    const fp = JSON.stringify([routine, active, mim]);
-    if (fp === lastFingerprint) return;
-    lastFingerprint = fp;
-    renderRoutine(routine.items);
-    initRoutineDrag();
-    renderItemList("cairn-list", active.items, { emptyText: "Nothing on the cairn yet." });
-    renderItemList("mim-list", mim.items, { mim: true, emptyText: "Empty." });
-    const mimCount = document.getElementById("mim-count");
-    if (mimCount) mimCount.textContent = mim.items.length ? `(${mim.items.length})` : "";
+
+    const listsFp = JSON.stringify([routine, active, mim]);
+    if (listsFp !== lastListsFp) {
+      lastListsFp = listsFp;
+      renderRoutine(routine.items);
+      initRoutineDrag();
+      renderItemList("cairn-list", active.items, { emptyText: "Nothing on the cairn yet." });
+      renderItemList("mim-list", mim.items, { mim: true, emptyText: "Empty." });
+      const mimCount = document.getElementById("mim-count");
+      if (mimCount) mimCount.textContent = mim.items.length ? `(${mim.items.length})` : "";
+    }
+
+    const settingsFp = JSON.stringify(settings);
+    if (settingsFp !== lastSettingsFp) {
+      lastSettingsFp = settingsFp;
+      applyUiConfig(settings.current);
+    }
   } catch (err) {
     if (String(err).includes("401")) {
       location.reload();
@@ -598,20 +608,108 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeEmojiPicker();
 });
 
-function applyUiConfig() {
-  const ui = window.CAIRN_UI || {};
-  const morning = document.getElementById("morning-note");
-  const cairn = document.getElementById("cairn-note");
-  if (morning && ui.headerMorningCoffee) {
-    morning.textContent = ui.headerMorningCoffee;
-    morning.title = ui.headerMorningCoffee;
-  }
-  if (cairn && ui.headerTheCairn) {
-    cairn.textContent = ui.headerTheCairn;
-    cairn.title = ui.headerTheCairn;
+function applyUiConfig(values) {
+  const ui = values || window.CAIRN_UI || {};
+  for (const note of document.querySelectorAll(".editable-note")) {
+    if (note.classList.contains("editing")) continue; // don't clobber active edit
+    const key = note.dataset.key;
+    if (key && ui[key] != null) {
+      note.textContent = ui[key];
+      if (!note.classList.contains("editing")) note.title = "Click to edit";
+    }
   }
 }
 applyUiConfig();
+
+async function saveSetting(key, value) {
+  const { current } = await api("/settings", {
+    method: "PATCH",
+    body: JSON.stringify({ [key]: value }),
+  });
+  applyUiConfig(current);
+}
+
+function startNoteEdit(note) {
+  if (note.classList.contains("editing")) return;
+  note.classList.add("editing");
+  note.contentEditable = "plaintext-only";
+  note.title = "";
+  const reset = document.querySelector(`.note-reset-btn[data-target="${note.id}"]`);
+  if (reset) reset.hidden = false;
+  note.focus();
+  // Select all text so a fresh edit can replace it.
+  const range = document.createRange();
+  range.selectNodeContents(note);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+async function commitNoteEdit(note) {
+  if (!note.classList.contains("editing")) return;
+  const key = note.dataset.key;
+  const text = note.textContent.trim();
+  note.classList.remove("editing");
+  note.contentEditable = "false";
+  const reset = document.querySelector(`.note-reset-btn[data-target="${note.id}"]`);
+  if (reset) reset.hidden = true;
+  note.title = "Click to edit";
+  try {
+    await saveSetting(key, text === "" ? null : text);
+  } catch (err) {
+    alert("Failed to save: " + err.message);
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const note = e.target.closest(".editable-note");
+  if (note && !note.classList.contains("editing")) {
+    e.preventDefault();
+    startNoteEdit(note);
+  }
+});
+
+document.addEventListener("click", async (e) => {
+  const reset = e.target.closest(".note-reset-btn");
+  if (!reset) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const note = document.getElementById(reset.dataset.target);
+  if (!note) return;
+  const key = note.dataset.key;
+  try {
+    const { current } = await api("/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ [key]: null }),
+    });
+    note.textContent = current[key] ?? "";
+    if (note.classList.contains("editing")) note.focus();
+  } catch (err) {
+    alert("Failed to reset: " + err.message);
+  }
+});
+
+document.addEventListener("blur", (e) => {
+  const note = e.target.closest?.(".editable-note");
+  if (note && note.classList.contains("editing")) commitNoteEdit(note);
+}, true);
+
+document.addEventListener("keydown", (e) => {
+  const note = e.target.closest?.(".editable-note");
+  if (!note || !note.classList.contains("editing")) return;
+  if (e.key === "Enter") {
+    e.preventDefault();
+    note.blur();
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    // Revert text from server-side source of truth.
+    note.classList.remove("editing");
+    note.contentEditable = "false";
+    const reset = document.querySelector(`.note-reset-btn[data-target="${note.id}"]`);
+    if (reset) reset.hidden = true;
+    applyUiConfig();
+  }
+});
 
 refreshAll();
 
