@@ -56,6 +56,29 @@ function checkedLabel(ts) {
   return `checked ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
+function dayName(date) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((date - today) / 86400000);
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days === -1) return "yesterday";
+  return date.toLocaleDateString(undefined, { weekday: "short" });
+}
+
+// Due-date label for a list row, with the lead time appended when set —
+// e.g. "4d (Tue), lead 2d (Sun)" or just "11d (Tue)" when lead_days is 0.
+function dueLabelText(it) {
+  if (!it.next_action_date) return "no date";
+  let label = relTime(it.next_action_date);
+  if (it.lead_days > 0) {
+    const lead = parseLocalDate(it.next_action_date);
+    lead.setDate(lead.getDate() - it.lead_days);
+    label += `, lead ${it.lead_days}d (${dayName(lead)})`;
+  }
+  return label;
+}
+
 function todayLabel() {
   return new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -257,7 +280,7 @@ function itemRowHtml(it, opts) {
     ? `<span class="item-emoji">${escapeHtml(it.emoji)}</span>`
     : "<span></span>";
   const dueValue = it.next_action_date || "";
-  const dueLabel = it.next_action_date ? relTime(it.next_action_date) : "no date";
+  const dueLabel = dueLabelText(it);
   const dueEmptyClass = it.next_action_date ? "" : " item-due-empty";
   const due = `<span class="item-due" title="Change date">
       <span class="item-due-label${dueEmptyClass}">${dueLabel}</span>
