@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { db, logAudit } from "../db.ts";
 import { runRecheck } from "../automations/index.ts";
 import { rescheduleAll } from "../scheduler.ts";
+import { advance, addDays, localToday } from "../dates.ts";
 import type { Item, ItemList } from "../types.ts";
 
 const route = new Hono();
@@ -18,7 +19,14 @@ const EDITABLE = [
   "automation_type",
   "automation_config",
   "check_schedule",
+  "url",
+  "check_cadence",
 ] as const;
+
+/** A check_cadence value is valid if it is null or one of the known cadences. */
+function isValidCadence(v: unknown): boolean {
+  return v == null || v === "weekly" || v === "monthly";
+}
 
 function getItem(id: number): Item | null {
   return db.query<Item, [number]>("SELECT * FROM items WHERE id = ?").get(id) ?? null;
@@ -60,16 +68,20 @@ route.post("/", async (c) => {
   const list: ItemList =
     body.list && VALID_LISTS.includes(body.list) ? body.list : "active";
   const mode = body.mode === "auto" ? "auto" : "manual";
+  if (!isValidCadence(body.check_cadence)) {
+    return c.json({ error: "Invalid check_cadence" }, 400);
+  }
 
   const inserted = db
     .query<{ id: number }, [
       string, string, string | null, string | null, string | null, number,
       string | null, string, string | null, string | null, string | null,
+      string | null, string | null,
     ]>(
       `INSERT INTO items
         (list, title, emoji, notes, next_action_date, lead_days, snoozed_until,
-         mode, automation_type, automation_config, check_schedule)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         mode, automation_type, automation_config, check_schedule, url, check_cadence)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING id`,
     )
     .get(
@@ -84,6 +96,8 @@ route.post("/", async (c) => {
       body.automation_type ?? null,
       body.automation_config ?? null,
       body.check_schedule ?? null,
+      body.url ?? null,
+      body.check_cadence ?? null,
     );
   if (!inserted) return c.json({ error: "Insert failed" }, 500);
 
@@ -111,6 +125,9 @@ route.patch("/:id", async (c) => {
     }
     sets.push("list = ?");
     values.push(newList);
+  }
+  if ("check_cadence" in body && !isValidCadence(body.check_cadence)) {
+    return c.json({ error: "Invalid check_cadence" }, 400);
   }
   for (const f of EDITABLE) {
     if (f in body) {
@@ -153,9 +170,7 @@ route.post("/:id/snooze", async (c) => {
   if (body?.until) {
     until = body.until;
   } else if (body?.days && Number.isFinite(body.days)) {
-    const d = new Date();
-    d.setDate(d.getDate() + body.days);
-    until = d.toISOString().slice(0, 10);
+    until = addDays(localToday(), body.days);
   } else {
     return c.json({ error: "until (YYYY-MM-DD) or days required" }, 400);
   }
@@ -184,6 +199,28 @@ route.post("/:id/recheck", async (c) => {
   }
   logAudit(id, "recheck_manual", result);
   return c.json({ item: getItem(id), result });
+});
+
+// "I just checked this" — advance the due date by the item's cadence, clear any
+// snooze, and stamp last_checked_at. See src/dates.ts for the advance algorithm.
+route.post("/:id/advance", (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+  const existing = getItem(id);
+  if (!existing) return c.json({ error: "Not found" }, 404);
+  if (existing.check_cadence !== "weekly" && existing.check_cadence !== "monthly") {
+    return c.json({ error: "no cadence set" }, 400);
+  }
+  if (!existing.next_action_date) {
+    return c.json({ error: "no date to advance from" }, 400);
+  }
+  const from = existing.next_action_date;
+  const to = advance(from, existing.check_cadence, localToday());
+  db.query(
+    "UPDATE items SET next_action_date = ?, last_checked_at = datetime('now'), snoozed_until = NULL WHERE id = ?",
+  ).run(to, id);
+  logAudit(id, "advanced", { from, to, cadence: existing.check_cadence });
+  return c.json({ item: getItem(id) });
 });
 
 export default route;

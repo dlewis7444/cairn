@@ -18,6 +18,8 @@ export interface Item {
   last_checked_at: string | null;
   last_status: string | null;
   sort_order: number | null;
+  url: string | null;
+  check_cadence: "weekly" | "monthly" | null;
   created_at: string;
   updated_at: string;
 }

@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS items (
   last_checked_at TEXT,
   last_status TEXT,
   sort_order INTEGER,
+  url TEXT,
+  check_cadence TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -71,6 +73,12 @@ const itemsCols = db
   .map((r) => r.name);
 if (!itemsCols.includes("sort_order")) {
   db.exec("ALTER TABLE items ADD COLUMN sort_order INTEGER");
+}
+if (!itemsCols.includes("url")) {
+  db.exec("ALTER TABLE items ADD COLUMN url TEXT");
+}
+if (!itemsCols.includes("check_cadence")) {
+  db.exec("ALTER TABLE items ADD COLUMN check_cadence TEXT");
 }
 
 export function logAudit(itemId: number | null, eventType: string, details?: unknown): void {

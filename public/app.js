@@ -44,6 +44,18 @@ function relTime(iso) {
   return `${days}d (${dow})`;
 }
 
+function checkedLabel(ts) {
+  // ts may be a full datetime ("YYYY-MM-DD HH:MM:SS") — keep only the date part.
+  const d = parseLocalDate(ts.slice(0, 10));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((today - d) / 86400000);
+  if (days <= 0) return "checked today";
+  if (days === 1) return "checked yesterday";
+  if (days < 7) return `checked ${days}d ago`;
+  return `checked ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+}
+
 function todayLabel() {
   return new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -86,6 +98,7 @@ const ICONS = {
   archive: `<svg ${SVG_ATTRS}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`,
   recheck: `<svg ${SVG_ATTRS}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
   restore: `<svg ${SVG_ATTRS}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>`,
+  advance: `<svg ${SVG_ATTRS}><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`,
 };
 function iconBtn(action, icon, title, disabled = false) {
   return `<button class="btn btn-icon" data-action="${action}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}"${disabled ? " disabled" : ""}>${ICONS[icon]}</button>`;
@@ -247,9 +260,15 @@ function itemRowHtml(it, opts) {
     </span>`;
   const meta = [due];
   if (it.snoozed_until) meta.push(`snoozed → ${it.snoozed_until}`);
-  if (it.last_checked_at) meta.push(`checked ${relTime(it.last_checked_at)}`);
+  if (it.last_checked_at) meta.push(checkedLabel(it.last_checked_at));
   const notesHtml = it.notes
     ? `<div class="item-notes" title="${escapeHtml(it.notes)}">${escapeHtml(it.notes)}</div>`
+    : "";
+
+  const isActive = !opts.archive && !opts.mim;
+  const safeUrl = it.url && /^https?:\/\//i.test(it.url) ? it.url : null;
+  const urlLink = isActive && safeUrl
+    ? `<a class="item-url" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(safeUrl)}">↗</a>`
     : "";
 
   let actions;
@@ -263,6 +282,8 @@ function itemRowHtml(it, opts) {
   } else {
     const manual = it.mode === "manual";
     actions = [
+      iconBtn("advance", "advance",
+        it.check_cadence ? "I checked this — advance the date" : "Set a new check date"),
       iconBtn("recheck", "recheck", manual ? "Recheck (auto-mode only)" : "Recheck now", manual),
       iconBtn("snooze", "snooze", "Snooze"),
       iconBtn("maybe", "maybe", "Maybe someday — move to MIM"),
@@ -271,10 +292,12 @@ function itemRowHtml(it, opts) {
   }
 
   const editable = opts.archive ? "" : ` data-editable="1"`;
-  return `<div class="item-row" data-id="${it.id}" data-mode="${it.mode}"${editable}>
+  return `<div class="item-row" data-id="${it.id}" data-mode="${it.mode}" data-cadence="${it.check_cadence || ""}"${editable}>
     ${emoji}
     <div class="item-main">
-      <div class="item-title" title="${escapeHtml(it.title)}">${escapeHtml(it.title)}</div>
+      <div class="item-titlerow">
+        <div class="item-title" title="${escapeHtml(it.title)}">${escapeHtml(it.title)}</div>${urlLink}
+      </div>
       <div class="item-meta">${meta.join(" · ")}</div>
       ${notesHtml}
     </div>
@@ -448,8 +471,8 @@ document.addEventListener("click", async (e) => {
   }
 
   if (!action) {
-    // Click-to-edit: anywhere on an editable row that isn't a button or the due label
-    if (row.dataset.editable === "1" && !target.closest("button")) {
+    // Click-to-edit: anywhere on an editable row that isn't a button, link, or the due label
+    if (row.dataset.editable === "1" && !target.closest("button, a")) {
       try {
         const { item } = await api(`/items/${id}`);
         openItemDialog(item);
@@ -462,6 +485,24 @@ document.addEventListener("click", async (e) => {
 
   try {
     switch (action) {
+      case "advance": {
+        const cadence = row.dataset.cadence;
+        const picker = row.querySelector(".item-due-picker");
+        if (cadence && picker && picker.value) {
+          actionEl.disabled = true;
+          try {
+            await api(`/items/${id}/advance`, { method: "POST" });
+            await refreshAll();
+          } finally {
+            actionEl.disabled = false;
+          }
+        } else if (picker) {
+          // No cadence (or no date to anchor from): just drop the calendar.
+          if (typeof picker.showPicker === "function") picker.showPicker();
+          else picker.focus();
+        }
+        break;
+      }
       case "routine-complete": {
         actionEl.disabled = true;
         row.classList.add("glowing");
@@ -538,8 +579,10 @@ function openItemDialog(seed = null) {
     form.title.value = seed.title;
     form.list.value = seed.list;
     form.next_action_date.value = seed.next_action_date || "";
+    form.check_cadence.value = seed.check_cadence || "";
     form.lead_days.value = seed.lead_days ?? 0;
     form.notes.value = seed.notes || "";
+    form.url.value = seed.url || "";
     form.mode.value = seed.mode || "manual";
     form.check_schedule.value = seed.check_schedule || "";
     form.automation_type.value = seed.automation_type || "";
@@ -585,8 +628,10 @@ document.getElementById("item-form").addEventListener("submit", async (e) => {
     list: data.list,
     notes: data.notes || null,
     next_action_date: data.next_action_date || null,
+    check_cadence: data.check_cadence || null,
     lead_days: parseInt(data.lead_days, 10) || 0,
     mode: data.mode,
+    url: data.url || null,
     check_schedule: data.check_schedule || null,
     automation_type: data.automation_type || null,
     automation_config: data.automation_config || null,
