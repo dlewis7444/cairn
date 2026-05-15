@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { env, loadConfig } from "./config.ts";
 import { db, logAudit } from "./db.ts";
+import { addDays, toISODate } from "./dates.ts";
 import type { Item, AppConfig } from "./types.ts";
 
 let transporter: Transporter | null = null;
@@ -17,7 +18,10 @@ function getTransporter(): Transporter {
 }
 
 export function findImminentItems(today: Date = new Date()): Item[] {
-  const iso = today.toISOString().slice(0, 10);
+  const iso = toISODate(today);
+  // Digest horizon: items due — or, via lead_days, flagged early — on or before
+  // today + 2 days. Overdue items fall inside this window too.
+  const windowEnd = addDays(iso, 2);
   return db
     .query<Item, [string, string]>(
       `SELECT * FROM items
@@ -27,7 +31,7 @@ export function findImminentItems(today: Date = new Date()): Item[] {
          AND (snoozed_until IS NULL OR snoozed_until <= date(?))
        ORDER BY next_action_date ASC`,
     )
-    .all(iso, iso);
+    .all(windowEnd, iso);
 }
 
 export interface DigestResult {

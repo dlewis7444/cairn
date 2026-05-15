@@ -32,10 +32,14 @@ export function daysInMonth(y: number, m: number): number {
   return new Date(y, m, 0).getDate();
 }
 
+/** Format a Date as a local-time YYYY-MM-DD string. */
+export function toISODate(d: Date): string {
+  return fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
 /** Today's local date as YYYY-MM-DD. */
 export function localToday(): string {
-  const d = new Date();
-  return fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  return toISODate(new Date());
 }
 
 /** Add `n` calendar days (DST-safe; not epoch-ms math). */
