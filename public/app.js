@@ -127,6 +127,7 @@ const ICONS = {
   recheck: `<svg ${SVG_ATTRS}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
   restore: `<svg ${SVG_ATTRS}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>`,
   advance: `<svg ${SVG_ATTRS}><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`,
+  calendar: `<svg ${SVG_ATTRS}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
 };
 function iconBtn(action, icon, title, disabled = false) {
   return `<button class="btn btn-icon" data-action="${action}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}"${disabled ? " disabled" : ""}>${ICONS[icon]}</button>`;
@@ -320,7 +321,7 @@ function itemRowHtml(it, opts) {
   } else {
     const manual = it.mode === "manual";
     actions = [
-      iconBtn("advance", "advance",
+      iconBtn("advance", it.check_cadence ? "advance" : "calendar",
         it.check_cadence ? "I checked this — advance the date" : "Set a new check date"),
       iconBtn("recheck", "recheck", manual ? "Recheck (auto-mode only)" : "Recheck now", manual),
       SNOOZE_ENABLED ? iconBtn("snooze", "snooze", "Snooze") : "",
