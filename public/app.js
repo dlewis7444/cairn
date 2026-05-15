@@ -507,7 +507,7 @@ document.addEventListener("click", async (e) => {
         actionEl.disabled = true;
         row.classList.add("glowing");
         await api(`/routine/${id}/complete`, { method: "POST" });
-        setTimeout(() => refreshAll(), 1500);
+        setTimeout(() => refreshAll(), 750);
         break;
       }
       case "gonna":

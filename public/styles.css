@@ -442,4 +442,4 @@ body {
   0%   { background: var(--glow); box-shadow: 0 0 24px var(--glow); }
   100% { background: var(--row);  box-shadow: none; }
 }
-.glowing { animation: warmGlow 1.5s ease-out forwards; }
+.glowing { animation: warmGlow 0.75s ease-out forwards; }
