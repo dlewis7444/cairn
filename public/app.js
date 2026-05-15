@@ -275,6 +275,15 @@ function renderItemList(containerId, items, opts = {}) {
   container.innerHTML = items.map((it) => itemRowHtml(it, opts)).join("");
 }
 
+// Normalize an item URL: assume https when there is no scheme, strip the
+// scheme for display, and truncate the display text to 25 characters.
+function urlParts(raw) {
+  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  let display = raw.replace(/^https?:\/\//i, "");
+  if (display.length > 25) display = display.slice(0, 25) + "…";
+  return { href, display };
+}
+
 function itemRowHtml(it, opts) {
   const emoji = it.emoji
     ? `<span class="item-emoji">${escapeHtml(it.emoji)}</span>`
@@ -294,10 +303,11 @@ function itemRowHtml(it, opts) {
     : "";
 
   const isActive = !opts.archive && !opts.mim;
-  const safeUrl = it.url && /^https?:\/\//i.test(it.url) ? it.url : null;
-  const urlLink = isActive && safeUrl
-    ? `<a class="item-url" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(safeUrl)}">↗</a>`
-    : "";
+  let urlLink = "";
+  if (isActive && it.url && it.url.trim()) {
+    const { href, display } = urlParts(it.url.trim());
+    urlLink = `<a class="item-url" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(href)}">${escapeHtml(display)}</a>`;
+  }
 
   let actions;
   if (opts.archive) {
