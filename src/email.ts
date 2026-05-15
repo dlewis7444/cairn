@@ -2,6 +2,7 @@ import nodemailer, { type Transporter } from "nodemailer";
 import { env, loadConfig } from "./config.ts";
 import { db, logAudit } from "./db.ts";
 import { addDays, toISODate } from "./dates.ts";
+import { SNOOZE_ENABLED } from "./features.ts";
 import type { Item, AppConfig } from "./types.ts";
 
 let transporter: Transporter | null = null;
@@ -22,16 +23,19 @@ export function findImminentItems(today: Date = new Date()): Item[] {
   // Digest horizon: items due — or, via lead_days, flagged early — on or before
   // today + 2 days. Overdue items fall inside this window too.
   const windowEnd = addDays(iso, 2);
-  return db
-    .query<Item, [string, string]>(
-      `SELECT * FROM items
+  // The snooze filter is applied only while the snooze feature is enabled
+  // (see src/features.ts); when disabled, snoozed_until is ignored entirely.
+  const snoozeClause = SNOOZE_ENABLED
+    ? "AND (snoozed_until IS NULL OR snoozed_until <= date(?))"
+    : "";
+  const sql = `SELECT * FROM items
        WHERE list = 'active'
          AND next_action_date IS NOT NULL
          AND date(next_action_date, '-' || lead_days || ' days') <= date(?)
-         AND (snoozed_until IS NULL OR snoozed_until <= date(?))
-       ORDER BY next_action_date ASC`,
-    )
-    .all(windowEnd, iso);
+         ${snoozeClause}
+       ORDER BY next_action_date ASC`;
+  const params = SNOOZE_ENABLED ? [windowEnd, iso] : [windowEnd];
+  return db.query<Item, string[]>(sql).all(...params);
 }
 
 export interface DigestResult {

@@ -71,6 +71,11 @@ function escapeHtml(s) {
   );
 }
 
+// Snooze is deactivated (see src/features.ts — keep this mirror flag in sync).
+// When false: no SNOOZE button, no "snoozed → …" badge. The case "snooze"
+// handler below is left intact but unreachable.
+const SNOOZE_ENABLED = false;
+
 const EMOJI_PALETTE = [
   "📦","📫","🚚","🛒","🛍️","✉️","📜","🧾",
   "💸","💰","💳","🏦","📈","📉","🪙","📊",
@@ -259,7 +264,7 @@ function itemRowHtml(it, opts) {
       <input type="date" class="item-due-picker" value="${dueValue}" tabindex="-1" aria-label="Change date">
     </span>`;
   const meta = [due];
-  if (it.snoozed_until) meta.push(`snoozed → ${it.snoozed_until}`);
+  if (SNOOZE_ENABLED && it.snoozed_until) meta.push(`snoozed → ${it.snoozed_until}`);
   if (it.last_checked_at) meta.push(checkedLabel(it.last_checked_at));
   const notesHtml = it.notes
     ? `<div class="item-notes" title="${escapeHtml(it.notes)}">${escapeHtml(it.notes)}</div>`
@@ -285,7 +290,7 @@ function itemRowHtml(it, opts) {
       iconBtn("advance", "advance",
         it.check_cadence ? "I checked this — advance the date" : "Set a new check date"),
       iconBtn("recheck", "recheck", manual ? "Recheck (auto-mode only)" : "Recheck now", manual),
-      iconBtn("snooze", "snooze", "Snooze"),
+      SNOOZE_ENABLED ? iconBtn("snooze", "snooze", "Snooze") : "",
       iconBtn("maybe", "maybe", "Maybe someday — move to MIM"),
       iconBtn("archive", "archive", "Archive"),
     ].join("");

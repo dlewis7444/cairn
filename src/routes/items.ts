@@ -3,6 +3,7 @@ import { db, logAudit } from "../db.ts";
 import { runRecheck } from "../automations/index.ts";
 import { rescheduleAll } from "../scheduler.ts";
 import { advance, addDays, localToday } from "../dates.ts";
+import { SNOOZE_ENABLED } from "../features.ts";
 import type { Item, ItemList } from "../types.ts";
 
 const route = new Hono();
@@ -160,6 +161,8 @@ route.post("/:id/move", async (c) => {
 });
 
 route.post("/:id/snooze", async (c) => {
+  // Snooze is deactivated — route kept intact behind the flag (see src/features.ts).
+  if (!SNOOZE_ENABLED) return c.json({ error: "snooze is disabled" }, 403);
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
   const body = (await c.req.json().catch(() => null)) as
