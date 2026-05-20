@@ -1,7 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { env, loadConfig } from "./config.ts";
 import { db, logAudit } from "./db.ts";
-import { addDays, toISODate } from "./dates.ts";
+import { toISODate } from "./dates.ts";
 import { SNOOZE_ENABLED } from "./features.ts";
 import type { Item, AppConfig } from "./types.ts";
 
@@ -20,9 +20,8 @@ function getTransporter(): Transporter {
 
 export function findImminentItems(today: Date = new Date()): Item[] {
   const iso = toISODate(today);
-  // Digest horizon: items due — or, via lead_days, flagged early — on or before
-  // today + 2 days. Overdue items fall inside this window too.
-  const windowEnd = addDays(iso, 2);
+  // Digest horizon: items whose check date — next_action_date pulled back by
+  // lead_days — has arrived. Overdue items fall inside this window too.
   // The snooze filter is applied only while the snooze feature is enabled
   // (see src/features.ts); when disabled, snoozed_until is ignored entirely.
   const snoozeClause = SNOOZE_ENABLED
@@ -34,7 +33,7 @@ export function findImminentItems(today: Date = new Date()): Item[] {
          AND date(next_action_date, '-' || lead_days || ' days') <= date(?)
          ${snoozeClause}
        ORDER BY next_action_date ASC`;
-  const params = SNOOZE_ENABLED ? [windowEnd, iso] : [windowEnd];
+  const params = SNOOZE_ENABLED ? [iso, iso] : [iso];
   return db.query<Item, string[]>(sql).all(...params);
 }
 
