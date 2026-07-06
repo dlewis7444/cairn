@@ -90,7 +90,7 @@ function renderDigest(
 
   const textLines = items.map((it) => {
     const emoji = it.emoji ? `${it.emoji} ` : "";
-    const due = describeDue(it.next_action_date!);
+    const due = describeDue(it.next_action_date!, it.lead_days);
     return `- ${emoji}${it.title} — ${due}${it.notes ? ` (${it.notes})` : ""}`;
   });
   const subject = `${prefix} ${items.length} item${items.length === 1 ? "" : "s"} on the cairn`;
@@ -98,7 +98,7 @@ function renderDigest(
   const htmlLines = items
     .map((it) => {
       const emoji = it.emoji ? `${escape(it.emoji)} ` : "";
-      const due = describeDue(it.next_action_date!);
+      const due = describeDue(it.next_action_date!, it.lead_days);
       const notes = it.notes ? ` <span style="color:#666">(${escape(it.notes)})</span>` : "";
       return `<li>${emoji}<strong>${escape(it.title)}</strong> — ${escape(due)}${notes}</li>`;
     })
@@ -107,18 +107,34 @@ function renderDigest(
   return { subject, html, text };
 }
 
-function describeDue(dateIso: string): string {
+// Render the due-date label. With no leadDays (stats summary) this stays on
+// the plain form. With leadDays provided it matches the list UI: countdown to
+// the lead date, that lead date's weekday, then "(due +N)". e.g.
+// "73d, Thu (due +14)" or "27d, Sun (due +0)".
+function describeDue(dateIso: string, leadDays?: number): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   // Parse YYYY-MM-DD as local midnight (avoid UTC interpretation drifting the day).
   const [y, m, d] = dateIso.split("-").map(Number) as [number, number, number];
   const due = new Date(y, m - 1, d);
-  const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return `overdue by ${Math.abs(diffDays)}d`;
-  if (diffDays === 0) return "today";
-  if (diffDays === 1) return "tomorrow";
-  const dow = due.toLocaleDateString(undefined, { weekday: "short" });
-  return `${diffDays}d (${dow})`;
+  const lead = leadDays || 0;
+  const effective = new Date(due);
+  effective.setDate(effective.getDate() - lead);
+  const diffDays = Math.round((effective.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (leadDays === undefined) {
+    if (diffDays < 0) return `overdue by ${Math.abs(diffDays)}d`;
+    if (diffDays === 0) return "today";
+    if (diffDays === 1) return "tomorrow";
+    const dow = due.toLocaleDateString(undefined, { weekday: "short" });
+    return `${diffDays}d (${dow})`;
+  }
+  const wk = effective.toLocaleDateString(undefined, { weekday: "short" });
+  let daysPart: string;
+  if (diffDays < 0) daysPart = `overdue ${Math.abs(diffDays)}d`;
+  else if (diffDays === 0) daysPart = "today";
+  else if (diffDays === 1) daysPart = "tomorrow";
+  else daysPart = `${diffDays}d`;
+  return `${daysPart}, ${wk} (due +${lead})`;
 }
 
 function describeStats(): string {
