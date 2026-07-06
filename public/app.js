@@ -31,17 +31,26 @@ function parseLocalDate(iso) {
   return new Date(y, m - 1, d);
 }
 
-function relTime(iso) {
-  if (!iso) return "—";
+// Due-date label for a list row. The countdown is to the lead date
+// (due − lead_days); the weekday is that lead date's; "(due +N)" is how many
+// days further the actual due date sits. lead_days 0 collapses to the due
+// date itself. e.g. "4d, Fri (due +1)" or "27d, Sun (due +0)".
+function dueLabelText(it) {
+  if (!it.next_action_date) return "no date";
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = parseLocalDate(iso);
-  const days = Math.round((due - today) / 86400000);
-  if (days < 0) return `overdue ${Math.abs(days)}d`;
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  const dow = due.toLocaleDateString(undefined, { weekday: "short" });
-  return `${days}d (${dow})`;
+  const due = parseLocalDate(it.next_action_date);
+  const lead = it.lead_days || 0;
+  const effective = new Date(due);
+  effective.setDate(effective.getDate() - lead);
+  const days = Math.round((effective - today) / 86400000);
+  const wk = effective.toLocaleDateString(undefined, { weekday: "short" });
+  let daysPart;
+  if (days < 0) daysPart = `overdue ${Math.abs(days)}d`;
+  else if (days === 0) daysPart = "today";
+  else if (days === 1) daysPart = "tomorrow";
+  else daysPart = `${days}d`;
+  return `${daysPart}, ${wk} (due +${lead})`;
 }
 
 function checkedLabel(ts) {
@@ -54,29 +63,6 @@ function checkedLabel(ts) {
   if (days === 1) return "checked yesterday";
   if (days < 7) return `checked ${days}d ago`;
   return `checked ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
-}
-
-function dayName(date) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = Math.round((date - today) / 86400000);
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  if (days === -1) return "yesterday";
-  return date.toLocaleDateString(undefined, { weekday: "short" });
-}
-
-// Due-date label for a list row, with the lead time appended when set —
-// e.g. "4d (Tue), lead 2d (Sun)" or just "11d (Tue)" when lead_days is 0.
-function dueLabelText(it) {
-  if (!it.next_action_date) return "no date";
-  let label = relTime(it.next_action_date);
-  if (it.lead_days > 0) {
-    const lead = parseLocalDate(it.next_action_date);
-    lead.setDate(lead.getDate() - it.lead_days);
-    label += `, lead ${it.lead_days}d (${dayName(lead)})`;
-  }
-  return label;
 }
 
 function todayLabel() {
