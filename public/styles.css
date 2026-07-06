@@ -232,12 +232,24 @@ body {
   cursor: pointer;
 }
 .item-due-label {
-  text-decoration: underline dotted var(--border);
-  text-underline-offset: 3px;
-  transition: color 0.12s;
+  display: inline-block;
+  padding: 0 7px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+  transition: background 0.12s, color 0.12s;
 }
-.item-due:hover .item-due-label { color: var(--accent); text-decoration-color: var(--accent); }
-.item-due-empty { font-style: italic; }
+.item-due:hover .item-due-label {
+  background: color-mix(in srgb, var(--accent) 24%, var(--bg));
+  color: var(--fg);
+}
+.item-due-empty {
+  font-style: italic;
+  background: transparent;
+  color: var(--muted);
+}
 .item-due-picker {
   position: absolute;
   left: 0;
