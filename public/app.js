@@ -31,19 +31,17 @@ function parseLocalDate(iso) {
   return new Date(y, m - 1, d);
 }
 
-// Returns HTML (inserted unescaped into the row). The day-count and weekday
-// are wrapped in <strong> so the timing reads first, e.g. "5d (Sat)".
 function relTime(iso) {
   if (!iso) return "—";
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const due = parseLocalDate(iso);
   const days = Math.round((due - today) / 86400000);
-  if (days < 0) return `overdue <strong>${Math.abs(days)}d</strong>`;
+  if (days < 0) return `overdue ${Math.abs(days)}d`;
   if (days === 0) return "today";
   if (days === 1) return "tomorrow";
   const dow = due.toLocaleDateString(undefined, { weekday: "short" });
-  return `<strong>${days}d (${dow})</strong>`;
+  return `${days}d (${dow})`;
 }
 
 function checkedLabel(ts) {
@@ -70,14 +68,13 @@ function dayName(date) {
 
 // Due-date label for a list row, with the lead time appended when set —
 // e.g. "4d (Tue), lead 2d (Sun)" or just "11d (Tue)" when lead_days is 0.
-// Returns HTML; the day-count + weekday segments are bolded.
 function dueLabelText(it) {
   if (!it.next_action_date) return "no date";
   let label = relTime(it.next_action_date);
   if (it.lead_days > 0) {
     const lead = parseLocalDate(it.next_action_date);
     lead.setDate(lead.getDate() - it.lead_days);
-    label += `, lead <strong>${it.lead_days}d (${dayName(lead)})</strong>`;
+    label += `, lead ${it.lead_days}d (${dayName(lead)})`;
   }
   return label;
 }
