@@ -44,6 +44,9 @@ Thumbs.db
 # Session handoff notes — not source-controlled
 HANDOFF.md
 
+# SSH keys / config that live inside the checkout on a deploy host
+.ssh/
+
 # Playwright MCP scratch (screenshots, snapshots)
 .playwright-mcp/
 cairn-*.png
