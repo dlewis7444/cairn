@@ -22,14 +22,12 @@ bun install
 bun run start
 ```
 
-## Docker
-
-```bash
-docker compose up -d
-```
-
-Persistent data lives in the `data/` volume; backups land in `backups/`, which rsyncs to `BACKUP_RSYNC_TARGET` on the configured cron.
-
-## License
+## Deploy
+  
+  Cairn is one Bun process. Copy `.env.example` to `.env.local` and set the bearer token, SMTP settings if you want mail, and an optional backup target. `CAIRN_SEARXNG_URL` is optional; leave it blank to disable the headlines runner. Set `CAIRN_TZ` to an IANA timezone.
+  
+  `docker-compose.yml` is a sample container definition. `.gitlab-ci.yml` deploys over SSH. Put `CAIRN_DEPLOY_HOST`, `CAIRN_DEPLOY_USER`, and `CAIRN_DEPLOY_SSH_KEY` in CI variables, not in the repo.
+  
+  ## License
 
 MIT — see [LICENSE](LICENSE).
