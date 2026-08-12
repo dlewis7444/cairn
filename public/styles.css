@@ -226,6 +226,14 @@ body {
 .item-row[data-editable="1"]:hover,
 .routine-row[data-editable="1"]:hover { background: var(--row-hover); border-color: var(--accent); }
 
+/* Due today or overdue (lead window included) — moss tint, slightly darker. */
+.item-row.item-row-due {
+  background: color-mix(in srgb, var(--accent) 22%, var(--row));
+}
+.item-row.item-row-due[data-editable="1"]:hover {
+  background: color-mix(in srgb, var(--accent) 30%, var(--row-hover));
+}
+
 .item-due {
   position: relative;
   display: inline-block;

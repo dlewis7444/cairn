@@ -53,6 +53,17 @@ function dueLabelText(it) {
   return `${daysPart}, ${wk} (due +${lead})`;
 }
 
+// True when the item is due today or overdue, counting the lead window the
+// same way dueLabelText does (effective date = next_action_date − lead_days).
+function isDueNow(it) {
+  if (!it.next_action_date) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const effective = parseLocalDate(it.next_action_date);
+  effective.setDate(effective.getDate() - (it.lead_days || 0));
+  return effective <= today;
+}
+
 function checkedLabel(ts) {
   // ts may be a full datetime ("YYYY-MM-DD HH:MM:SS") — keep only the date part.
   const d = parseLocalDate(ts.slice(0, 10));
@@ -317,7 +328,8 @@ function itemRowHtml(it, opts) {
   }
 
   const editable = opts.archive ? "" : ` data-editable="1"`;
-  return `<div class="item-row" data-id="${it.id}" data-mode="${it.mode}" data-cadence="${it.check_cadence || ""}"${editable}>
+  const dueNow = isActive && isDueNow(it) ? " item-row-due" : "";
+  return `<div class="item-row${dueNow}" data-id="${it.id}" data-mode="${it.mode}" data-cadence="${it.check_cadence || ""}"${editable}>
     ${emoji}
     <div class="item-main">
       <div class="item-titlerow">
