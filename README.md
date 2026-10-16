@@ -15,12 +15,30 @@ Cairn sends one email every morning with whatever is imminent, and links to a we
 
 ## First-time setup
 
+Requires [Bun 1.3+](https://bun.sh/docs/installation); `npm start` cannot run Cairn.
+
 ```bash
-cp .env.example .env.local             # then fill in SMTP + bearer token
+cp .env.example .env.local  # then set CAIRN_BEARER_TOKEN; SMTP is optional
 cp config/config.example.toml config/config.toml
 bun install
 bun run start
 ```
+
+Open `http://127.0.0.1:3847` (or the port in `CAIRN_PORT`). At the `Bearer token (one-time):` prompt, enter your `CAIRN_BEARER_TOKEN`; a wrong token reloads the page and asks again. Cairn uses one shared token and is intended for a personal install.
+
+Mail is optional: leave `SMTP_TO` empty to disable it. Gmail requires an app password, with `SMTP_FROM` set to that account or one of its aliases.
+
+For native backups, install the `sqlite3` CLI on `PATH`. A missing CLI is logged without crashing the server; the Docker image already includes it.
+
+For Docker, create and edit the same environment and config files first—Compose requires `.env.local`, and Cairn requires `config/config.toml`:
+
+```bash
+cp .env.example .env.local
+cp config/config.example.toml config/config.toml
+docker compose up
+```
+
+Auto mode in the item form is unfinished: Playwright and AI are stubs. The only script runner is `headlines`, which requires `CAIRN_SEARXNG_URL`.
 
 ## Deploy
 

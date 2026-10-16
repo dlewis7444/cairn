@@ -8,7 +8,18 @@ let cached: AppConfig | null = null;
 
 export function loadConfig(): AppConfig {
   if (cached) return cached;
-  const raw = readFileSync(CONFIG_PATH, "utf-8");
+  let raw: string;
+  try {
+    raw = readFileSync(CONFIG_PATH, "utf-8");
+  } catch (error) {
+    if ((error as { code?: string }).code === "ENOENT") {
+      console.error(
+        `Missing ${CONFIG_PATH}. Copy config/config.example.toml to ${CONFIG_PATH}, then restart Cairn.`,
+      );
+      process.exit(1);
+    }
+    throw error;
+  }
   cached = parseToml(raw) as unknown as AppConfig;
   return cached;
 }
