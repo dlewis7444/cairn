@@ -42,9 +42,7 @@ Auto mode in the item form is unfinished: Playwright and AI are stubs. The only 
 
 ## Deploy
 
-Cairn is one Bun process. Copy `.env.example` to `.env.local` and set the bearer token, SMTP settings if you want mail, and an optional backup target. `CAIRN_SEARXNG_URL` is optional; leave it blank to disable the headlines runner. Set `CAIRN_TZ` to an IANA timezone.
-
-`docker-compose.yml` is a sample container definition. `.gitlab-ci.yml` deploys over SSH. Put `CAIRN_DEPLOY_HOST`, `CAIRN_DEPLOY_USER`, and `CAIRN_DEPLOY_SSH_KEY` in CI variables, not in the repo.
+Cairn is one Bun process, configured through `.env.local` (see `.env.example`) and `config/config.toml`. See [DEPLOY.md](DEPLOY.md) for persistent installs: a sample systemd unit (`contrib/cairn.service`), data and backup locations, Docker, and a generic GitLab CI deploy job.
 
 ## License
 

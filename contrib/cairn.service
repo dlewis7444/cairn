@@ -1,0 +1,30 @@
+# Sample systemd unit for a native persistent install of Cairn.
+#
+# Adjust User/Group, WorkingDirectory, and EnvironmentFile to your install,
+# then:
+#   sudo cp contrib/cairn.service /etc/systemd/system/cairn.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now cairn
+#
+# Requires: the `cairn` user to exist, Bun installed at the ExecStart path
+# (here /usr/local/bin/bun), and the environment file to be present.
+#
+# Logs: stdout/stderr go to the journal — `journalctl -u cairn -f`.
+
+[Unit]
+Description=Cairn watchlist and morning digest
+After=network.target
+
+[Service]
+Type=simple
+User=cairn
+Group=cairn
+WorkingDirectory=/opt/cairn
+EnvironmentFile=/opt/cairn/.env.local
+ExecStart=/usr/local/bin/bun src/index.ts
+Restart=on-failure
+RestartSec=5
+SyslogIdentifier=cairn
+
+[Install]
+WantedBy=multi-user.target

@@ -27,6 +27,7 @@ export function startScheduler(): void {
       try {
         await runBackup();
       } catch (err) {
+        console.error(`cairn: scheduled backup failed: ${String(err)}`);
         logAudit(null, "backup_error", { error: String(err) });
       }
     }),
