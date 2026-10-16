@@ -30,13 +30,14 @@ Mail is optional: leave `SMTP_TO` empty to disable it. Gmail requires an app pas
 
 For native backups, install the `sqlite3` CLI on `PATH`. A missing CLI is logged without crashing the server; the Docker image already includes it.
 
-For Docker, create and edit the same environment and config files first—Compose requires `.env.local`, and Cairn requires `config/config.toml`:
+For Docker, pull the published image. Compose reads `.env.local`. If `config/config.toml` is missing, the container seeds it from the example on startup:
 
 ```bash
-cp .env.example .env.local
-cp config/config.example.toml config/config.toml
+cp .env.example .env.local  # set CAIRN_BEARER_TOKEN; SMTP is optional
 docker compose up
 ```
+
+The image for this release is `ghcr.io/dlewis7444/cairn:0.1.1`. Tags `0.1` and `latest` track the newest release.
 
 Auto mode in the item form is unfinished: Playwright and AI are stubs. The only script runner is `headlines`, which requires `CAIRN_SEARXNG_URL`.
 

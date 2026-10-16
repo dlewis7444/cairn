@@ -7,6 +7,12 @@ backups
 config/config.toml
 .git
 .gitignore
+local
+.claude
+CLAUDE.md
+AGENTS.md
+public-repo-remediation-plan.md
+*.png
 .idea
 .vscode
 *.log

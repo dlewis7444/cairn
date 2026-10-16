@@ -1,7 +1,6 @@
 services:
   cairn:
-    build: .
-    image: cairn:latest
+    image: ghcr.io/dlewis7444/cairn:0.1.1
     container_name: cairn
     restart: unless-stopped
     ports:

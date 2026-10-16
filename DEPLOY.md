@@ -60,18 +60,26 @@ stderr, which lands in the journal under systemd.
 
 ## Docker
 
-`docker-compose.yml` is a sample single-container definition. It requires
-`.env.local` and `config/config.toml` to exist first (Compose reads the env
-file itself, and Cairn reads the mounted config):
+Published images are at `ghcr.io/dlewis7444/cairn`. A push of a `vX.Y.Z` tag
+builds `linux/amd64` and tags it as `X.Y.Z`, `X.Y`, and `latest`.
+`docker-compose.yml` pulls `ghcr.io/dlewis7444/cairn:0.1.1`.
 
 ```bash
-cp .env.example .env.local
-cp config/config.example.toml config/config.toml
+docker pull ghcr.io/dlewis7444/cairn:0.1.1
+cp .env.example .env.local   # set CAIRN_BEARER_TOKEN; SMTP is optional
 docker compose up
 ```
 
-Named volumes persist `/app/data` and `/app/backups`; `./config` is mounted
-from the host.
+Compose reads `.env.local`. Named volumes persist `/app/data` and
+`/app/backups`, and `./config` is mounted from the host. On startup the
+container copies the bundled example to `config/config.toml` when that file
+is absent, then leaves an existing file alone.
+
+To build from this checkout instead of pulling:
+
+```bash
+docker build -t cairn:local .
+```
 
 ## Continuous deployment
 

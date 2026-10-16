@@ -22,7 +22,7 @@ route.get("/", (c) => {
     status: dbOk ? "ok" : "degraded",
     db_ok: dbOk,
     last_digest_at: lastDigest?.created_at ?? null,
-    version: "0.1.0",
+    version: "0.1.1",
   });
 });
 
