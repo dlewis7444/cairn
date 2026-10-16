@@ -1,6 +1,7 @@
 {
   "name": "cairn",
   "version": "0.1.0",
+  "license": "MIT",
   "description": "A personal watchlist and morning digest.",
   "module": "src/index.ts",
   "type": "module",
