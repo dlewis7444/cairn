@@ -2,7 +2,7 @@
 //
 // All dates are YYYY-MM-DD strings in LOCAL time — the convention the rest of
 // Cairn uses (see public/app.js parseLocalDate). Never use Date.toISOString()
-// here: it is UTC and rolls a day early in negative-UTC zones (UTC).
+// here: it is UTC and rolls a day early in timezones behind UTC.
 
 export type CheckCadence = "weekly" | "monthly";
 

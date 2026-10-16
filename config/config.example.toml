@@ -26,7 +26,6 @@ tagline = "Stones on the trail."
 # === AI providers ===
 # Structural config (URLs, model lists, which env var holds the key) lives here.
 # Secrets (the actual API keys) live in .env.local, referenced by `api_key_env`.
-# Mirror of the dual-layer pattern used by another app (llm.config.json + env).
 #
 # Scaffolding only in this release — the runtime does not yet read `[ai]`.
 # Edit freely; it won't break anything until the auto-check AI runner lands.

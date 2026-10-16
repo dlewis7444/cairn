@@ -1,6 +1,6 @@
 // Feature flags for Cairn.
 
-// SNOOZE — deactivated 2026-05-15  (not a feature he uses).
+// SNOOZE — deactivated 2026-05-15 (unused; left in place so it can be revived).
 //
 // Everything snooze-related is LEFT IN PLACE but inert, so it can be revived:
 //   - the `snoozed_until` column and any existing data are untouched;

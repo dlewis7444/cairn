@@ -51,3 +51,12 @@ HANDOFF.md
 # Playwright MCP scratch (screenshots, snapshots)
 .playwright-mcp/
 cairn-*.png
+
+# Agent instructions and local lab notes — never publish
+/CLAUDE.md
+/AGENTS.md
+/.claude/
+/local/
+
+# Audit writeup contains the fingerprint
+/public-repo-remediation-plan.md

@@ -6,6 +6,9 @@ type ScriptFn = (cfg: Record<string, unknown>) => Promise<RecheckResult>;
 async function headlines(cfg: Record<string, unknown>): Promise<RecheckResult> {
   const query = (cfg.query as string | undefined) ?? "top news headlines today";
   const count = Math.min(Number(cfg.count ?? 5), 20);
+  if (!env.searxngUrl) {
+    return { ok: false, status: "CAIRN_SEARXNG_URL is not set" };
+  }
   const url = `${env.searxngUrl}/search?q=${encodeURIComponent(query)}&format=json&categories=news&time_range=day`;
 
   const res = await fetch(url, { headers: { Accept: "application/json" } });
