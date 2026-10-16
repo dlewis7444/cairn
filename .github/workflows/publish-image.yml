@@ -4,30 +4,13 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
-  workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  publish:
-    # GHCR creates a new package as private. The workflow token that pushed
-    # the image is an admin of that package and can open it.
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Make the GHCR package public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api --method PUT \
-            -H "Accept: application/vnd.github+json" \
-            /user/packages/container/cairn/visibility \
-            -f visibility=public
-
   image:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
