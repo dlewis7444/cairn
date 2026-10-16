@@ -12,12 +12,6 @@ deploy:
     - chmod 600 ~/.ssh/id_ed25519
     - ssh-keyscan -H "$CAIRN_DEPLOY_HOST" >> ~/.ssh/known_hosts
   script:
-    - ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes "$CAIRN_DEPLOY_USER@$CAIRN_DEPLOY_HOST" '
-        set -e
-        sudo -n -u cairn git -C /opt/cairn pull
-        sudo -n systemctl restart cairn
-        sleep 2
-        systemctl is-active cairn
-      '
+    - ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes "$CAIRN_DEPLOY_USER@$CAIRN_DEPLOY_HOST" 'set -e; sudo -n -u cairn git -C /opt/cairn pull; sudo -n systemctl restart cairn; sleep 2; systemctl is-active cairn'
   only:
     - main
